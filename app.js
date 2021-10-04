@@ -18,6 +18,7 @@ console.log("mine positions", minePositions);
 const minesLeftText = document.getElementById("mines-left");
 minesLeftText.textContent = minesLeft;
 
+
 /**
  * Creates a new game board
  *
@@ -60,14 +61,15 @@ board.forEach((row) => {
     gameBoard.append(tile.element);
     tile.element.addEventListener("click", () => {
       console.log("left clicked");
+      revealTile(board, tile);
     });
     tile.element.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      console.log("right clicked");
       markTile(tile);
     });
   });
 });
+
 
 /**
  * Randomly positions mines on the game board.
@@ -91,6 +93,7 @@ function getMinePositions(boardSize, numberOfMines) {
   return positions;
 }
 
+
 /**
  * Generates a random number between 0 and size argument.
  *
@@ -101,6 +104,7 @@ function getMinePositions(boardSize, numberOfMines) {
 function randomNumber(size) {
   return Math.floor(Math.random() * size);
 }
+
 
 /**
  * Compares position a to position b and returns true if they match.
@@ -113,6 +117,7 @@ function randomNumber(size) {
 function positionMatch(a, b) {
   return a.x === b.x && a.y === b.y;
 }
+
 
 /**
  * Checks if a tile is marked as a mine or not, updates its status and updates the number of mines left.
@@ -128,10 +133,56 @@ function markTile(tile) {
 
   if (tile.status === tileType.MARKED) {
     tile.status = tileType.HIDDEN;
-    minesLeft++ ;
+    minesLeft++;
   } else {
     tile.status = tileType.MARKED;
-    minesLeft-- ;
+    minesLeft--;
+  }
+  minesLeftText.textContent = minesLeft;
 }
-minesLeftText.textContent = minesLeft;
+
+
+/**
+ * Reveals the tiles.
+ *
+ * @param {array} board The game board.
+ * @param {object} tile The tile that was clicked.
+ * @return {void} Returns nothing.
+ */
+
+function revealTile(board, tile) {
+  if (tile.status !== tileType.HIDDEN) return;
+  if (tile.mine) {
+    tile.status = tileType.MINE;
+    return;
+  } else {
+    tile.status = tileType.NUMBER;
+    const adjacent = nearbyTiles(board, tile);
+    const mines = adjacent.filter((tile) => tile.mine);
+    if (mines.length === 0) {
+      adjacent.forEach(revealTile.bind(null, board));
+    } else {
+      tile.element.textContent = mines.length;
+    }
+  }
+}
+
+
+/**
+ * Returns an array of the adjacent tiles
+ *
+ * @param {array} board The game board.
+ * @param {object} {x,y} The x and y coordinates of the current tile.
+ * @return {array} Returns an array of the tiles adjacent to the current tile.
+ */
+
+function nearbyTiles(board, { x, y }) {
+  const tiles = [];
+  for (let i = -1; i <= 1; i++) {
+    for (let j = -1; j <= 1; j++) {
+      const tile = board[x + i]?.[y + j];
+      if (tile) tiles.push(tile);
+    }
+  }
+  return tiles;
 }
