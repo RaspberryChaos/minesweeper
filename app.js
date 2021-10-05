@@ -1,5 +1,5 @@
 const boardSize = 6;
-const numberMines = 6;
+const numberMines = 4;
 let minesLeft = numberMines;
 
 const tileType = {
@@ -13,10 +13,9 @@ const gameBoard = document.getElementById("board");
 gameBoard.style.setProperty("--size", boardSize);
 
 const minePositions = getMinePositions(boardSize, numberMines);
-console.log("mine positions", minePositions);
 
-const minesLeftText = document.getElementById("mines-left");
-minesLeftText.textContent = minesLeft;
+const message = document.getElementById("message");
+message.textContent = `Mines Left: ${minesLeft}`;
 
 
 /**
@@ -54,14 +53,13 @@ function createBoard(size, numMines) {
 }
 
 const board = createBoard(boardSize, numberMines);
-console.log(board);
 
 board.forEach((row) => {
   row.forEach((tile) => {
     gameBoard.append(tile.element);
     tile.element.addEventListener("click", () => {
-      console.log("left clicked");
       revealTile(board, tile);
+      checkGameOver();
     });
     tile.element.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -138,7 +136,7 @@ function markTile(tile) {
     tile.status = tileType.MARKED;
     minesLeft--;
   }
-  minesLeftText.textContent = minesLeft;
+  message.textContent = `Mines Left: ${minesLeft}`;
 }
 
 
@@ -186,3 +184,80 @@ function nearbyTiles(board, { x, y }) {
   }
   return tiles;
 }
+
+
+/**
+ * Checks for game over.
+ * 
+ * @return {void} Returns nothing.
+ */
+
+function checkGameOver() {
+    let win = checkWin(board);
+    let lose = checkLose(board);
+
+    if(win || lose) {
+        gameBoard.addEventListener("click", stopProp, {capture: true});
+        gameBoard.addEventListener("contextmenu", stopProp, {capture: true});
+    }
+
+    if(win) {
+        message.textContent = "You Win!";
+    }
+    if(lose) {
+        message.textContent = "You Lose!";
+        board.forEach(row => {
+            row.forEach(tile => {
+                if(tile.status === tileType.MARKED) markTile(tile);
+                if(tile.mine) revealTile(board, tile);
+            })     
+        })
+    }
+}
+
+
+/**
+ * Prevents event listeners on tiles being called if game over.
+ *
+ * @param {event} e
+ * @return {void} Returns nothing
+ */
+
+function stopProp(e) {
+    e.stopImmediatePropagation();
+}
+
+
+/**
+ * Checks if the game is been won.
+ *
+ * @param {array} board The game board.
+ * @return {boolean} Returns true if the game has been won, false if not.
+ */
+
+function checkWin(board) {
+    return board.every(row => {
+        return row.every(tile => {
+            return (
+                tile.status === tileType.NUMBER || 
+                (tile.mine && (tile.status === tileType.MARKED || tile.status === tileType.HIDDEN))
+            ) 
+        })
+    })
+};
+
+
+/**
+ * Checks if the game is been lost.
+ *
+ * @param {array} board The game board.
+ * @return {boolean} Returns true if the game has been lost, false if not.
+ */
+
+function checkLose(board) {
+    return board.some(row => {
+        return row.some(tile => {
+            return tile.status === tileType.MINE;
+        })
+    })
+};
